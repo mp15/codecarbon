@@ -9,7 +9,7 @@ except ImportError:
 
 
 def test_perf():
-    if codecarbon.core.cpu.is_perf_available() is False:
+    if codecarbon.core.cpu.is_perf_cpu_available() is False:
         return
     x = Perf(["energy-pkg"])
     x.start()

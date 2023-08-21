@@ -273,8 +273,13 @@ class BaseEmissionsTracker(ABC):
             self._conf["gpu_count"] = len(self._gpu_ids)
 
         logger.info("[setup] RAM Tracking...")
-        ram = RAM(tracking_mode=self._tracking_mode)
         self._conf["ram_total_size"] = ram.machine_memory_GB
+        if cpu.is_perf_ram_available():
+            logger.info("Tracking RAM via Linux Perf interface")
+            ram = RAM(tracking_mode=self._tracking_mode, data_source="linux_perf")
+        else:
+            logger.info("Tracking RAM via fallback mode")
+            ram = RAM(tracking_mode=self._tracking_mode, data_source="constant")
         self._hardware: List[Union[RAM, CPU, GPU]] = [ram]
 
         # Hardware detection
@@ -298,7 +303,7 @@ class BaseEmissionsTracker(ABC):
             hardware = CPU.from_utils(self._output_dir, "intel_power_gadget")
             self._hardware.append(hardware)
             self._conf["cpu_model"] = hardware.get_model()
-        elif cpu.is_perf_available():
+        elif cpu.is_perf_cpu_available():
             logger.info("Tracking CPU via Linux Perf interface")
             hardware = CPU.from_utils(self._output_dir, "linux_perf")
             self._hardware.append(hardware)

@@ -51,7 +51,7 @@ def is_rapl_available():
         return False
 
 
-def is_perf_available():
+def is_perf_cpu_available():
     try:
         if Perf is not None:
             Perf(["energy-pkg"])
@@ -65,8 +65,21 @@ def is_perf_available():
         )
         return False
 
+def is_perf_ram_available():
+    try:
+        if Perf is not None:
+            Perf(["energy-ram"])
+            return True
+        else:
+            return False
+    except Exception as e:
+        logger.debug(
+            "Not using the Perf interface, an exception occurred while instantiating "
+            + f"Perf : {e}",
+        )
+        return False
 
-class BaseHardwareMeasurement(abc.ABC):
+class BaseCPUHardwareMeasurement(abc.ABC):
     @abc.abstractmethod
     def start(self) -> None:
         pass
@@ -76,7 +89,7 @@ class BaseHardwareMeasurement(abc.ABC):
         pass
 
 
-class IntelPowerGadget(BaseHardwareMeasurement):
+class IntelPowerGadget(BaseCPUHardwareMeasurement):
     _osx_exec = "PowerLog"
     _osx_exec_backup = "/Applications/Intel Power Gadget/PowerLog"
     _windows_exec = "PowerLog3.0.exe"
@@ -191,7 +204,7 @@ class IntelPowerGadget(BaseHardwareMeasurement):
         pass
 
 
-class PerfCPUWrapper(BaseHardwareMeasurement):
+class PerfCPUWrapper(BaseCPUHardwareMeasurement):
     def __init__(self) -> None:
         self._perfinterface = Perf(["energy-pkg"])
         self.cpu_details: Dict = dict()
@@ -224,7 +237,7 @@ class PerfCPUWrapper(BaseHardwareMeasurement):
         return self.cpu_details
 
 
-class IntelRAPL(BaseHardwareMeasurement):
+class IntelRAPL(BaseCPUHardwareMeasurement):
     def __init__(self, rapl_dir="/sys/class/powercap/intel-rapl"):
         self._lin_rapl_dir = rapl_dir
         self._system = sys.platform.lower()

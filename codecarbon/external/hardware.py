@@ -256,6 +256,7 @@ class RAM(BaseHardware):
         pid: int = psutil.Process().pid,
         children: bool = True,
         tracking_mode: str = "machine",
+        data_source: str = "constant",
     ):
         """
         Instantiate a RAM object from a reference pid. If none is provided, will use the
@@ -271,6 +272,8 @@ class RAM(BaseHardware):
         self._pid = pid
         self._children = children
         self._tracking_mode = tracking_mode
+        if data_source == "linux_perf":
+            self._hw_measurement_interface = PerfRAMWrapper()
 
     def _get_children_memories(self):
         """
@@ -364,15 +367,18 @@ class RAM(BaseHardware):
         Returns:
             Power: kW of power consumption, using self.power_per_GB W/GB
         """
-        try:
-            memory_GB = (
-                self.machine_memory_GB
-                if self._tracking_mode == "machine"
-                else self.process_memory_GB
-            )
-            ram_power = Power.from_watts(memory_GB * self.power_per_GB)
-        except Exception as e:
-            logger.warning(f"Could not measure RAM Power ({str(e)})")
-            ram_power = Power.from_watts(0)
+        if self._hw_measurement_interface is None:
+            try:
+                memory_GB = (
+                    self.machine_memory_GB
+                    if self._tracking_mode == "machine"
+                    else self.process_memory_GB
+                )
+                ram_power = Power.from_watts(memory_GB * self.power_per_GB)
+            except Exception as e:
+                logger.warning(f"Could not measure RAM Power ({str(e)})")
+                ram_power = Power.from_watts(0)
+        else:
+            self._hw_measurement_interface.get_energy()
 
         return ram_power
